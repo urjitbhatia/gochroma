@@ -1,6 +1,7 @@
 package chroma
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -70,4 +71,15 @@ func (c *Client) Reset() (bool, error) {
 		}
 	}
 	return false, err
+}
+
+func (c *Client) GetVersion() (string, error) {
+	resp, err := c.httpClient.Get(c.url + "/version")
+	if err != nil {
+		return "", err
+	}
+	body, err := io.ReadAll(resp.Body)
+	// server response string is wrapped in double quotes, remove that
+	body = bytes.ReplaceAll(body, []byte("\""), []byte(""))
+	return string(body), err
 }

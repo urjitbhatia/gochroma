@@ -37,4 +37,13 @@ var _ = Describe("Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ok).To(BeTrue())
 	})
+
+	It("gets the version of the db", func() {
+		client, err := chroma.NewClient("http://localhost:8000")
+		Expect(err).ToNot(HaveOccurred())
+
+		ver, err := client.GetVersion()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ver).To(Equal("0.4.8"))
+	})
 })
