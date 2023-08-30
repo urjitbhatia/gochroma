@@ -48,6 +48,12 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe("collections", func() {
+		BeforeEach(func() {
+			client, err := chroma.NewClient("http://localhost:8000")
+			Expect(err).ToNot(HaveOccurred())
+			client.Reset()
+		})
+
 		It("list collections", func() {
 			client, err := chroma.NewClient("http://localhost:8000")
 			Expect(err).ToNot(HaveOccurred())
@@ -56,6 +62,27 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(collections)).To(Equal(0))
 		})
-	})
 
+		It("create and then list collection", func() {
+			client, err := chroma.NewClient("http://localhost:8000")
+			Expect(err).ToNot(HaveOccurred())
+
+			// create new collection
+			collection, err := client.CreateCollection("unit-test", "l2", nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(collection.Name).To(Equal("unit-test"))
+
+			// should error if recreating existing collection
+			_, err = client.CreateCollection("unit-test", "l2", nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("error while creating collection: ValueError('Collection unit-test already exists.')"))
+
+			// list the collections
+			collections, err := client.ListCollections()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(collections)).To(Equal(1))
+			Expect(collections[0].Name).To(Equal("unit-test"))
+			Expect(collections[0].Metadata).To(Equal(map[string]any{"hnsw:space": "l2"}))
+		})
+	})
 })

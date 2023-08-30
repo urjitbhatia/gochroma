@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type Client struct {
@@ -84,12 +85,63 @@ func (c *Client) GetVersion() (string, error) {
 	return string(body), err
 }
 
-func (c *Client) ListCollections() (map[string]any, error) {
+func (c *Client) ListCollections() ([]Collection, error) {
 	resp, err := c.httpClient.Get(c.url + "/collections")
 	if err != nil {
 		return nil, err
 	}
-	collections := map[string]any{}
-	json.NewDecoder(resp.Body).Decode(&collections)
-	return collections, nil
+
+	collections := []Collection{}
+	err = json.NewDecoder(resp.Body).Decode(&collections)
+	return collections, err
+}
+
+type Collection struct {
+	Name     string         `json:"name"`
+	ID       string         `json:"id"`
+	Metadata map[string]any `json:"metadata"`
+}
+
+func (c *Client) CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
+
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+	if distanceFn == "" {
+		metadata["hnsw:space"] = "l2"
+	} else {
+		metadata["hnsw:space"] = strings.ToLower(string(distanceFn))
+	}
+	data := map[string]any{
+		"name": name, "metadata": metadata, "get_or_create": false,
+	}
+	collection := Collection{}
+
+	reqBody, err := json.Marshal(data)
+	if err != nil {
+		return collection, err
+	}
+
+	resp, err := c.httpClient.Post(c.url+"/collections", "application/json", bytes.NewReader(reqBody))
+	if err != nil {
+		return collection, err
+	}
+	bodyBuf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return collection, err
+	}
+
+	respJSON := map[string]any{}
+	err = json.Unmarshal(bodyBuf, &respJSON)
+	if err != nil {
+		return collection, err
+	}
+
+	// Check response type
+	if errStr, ok := respJSON["error"]; ok {
+		return collection, fmt.Errorf("error while creating collection: %s", errStr)
+	}
+	// not an error, convert to collection type
+	err = json.Unmarshal(bodyBuf, &collection)
+	return collection, err
 }
