@@ -19,15 +19,22 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	Describe("Heartbeat", func() {
-		It("gets heartbeat", func() {
-			client, err := chroma.NewClient("http://localhost:8000")
-			Expect(err).ToNot(HaveOccurred())
+	It("gets heartbeat", func() {
+		client, err := chroma.NewClient("http://localhost:8000")
+		Expect(err).ToNot(HaveOccurred())
 
-			alive, err := client.Heartbeat()
-			Expect(err).ToNot(HaveOccurred())
-			Expect(alive).To(BeNumerically(">", 0))
+		alive, err := client.Heartbeat()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alive).To(BeNumerically(">", 0))
 
-		})
+	})
+
+	It("resets the db", func() {
+		client, err := chroma.NewClient("http://localhost:8000")
+		Expect(err).ToNot(HaveOccurred())
+
+		ok, err := client.Reset()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ok).To(BeTrue())
 	})
 })
