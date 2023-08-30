@@ -18,4 +18,16 @@ var _ = Describe("Client", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+
+	Describe("Heartbeat", func() {
+		It("gets heartbeat", func() {
+			client, err := chroma.NewClient("http://localhost:8000")
+			Expect(err).ToNot(HaveOccurred())
+
+			alive, err := client.Heartbeat()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(alive).To(BeNumerically(">", 0))
+
+		})
+	})
 })
