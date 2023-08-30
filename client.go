@@ -83,3 +83,13 @@ func (c *Client) GetVersion() (string, error) {
 	body = bytes.ReplaceAll(body, []byte("\""), []byte(""))
 	return string(body), err
 }
+
+func (c *Client) ListCollections() (map[string]any, error) {
+	resp, err := c.httpClient.Get(c.url + "/collections")
+	if err != nil {
+		return nil, err
+	}
+	collections := map[string]any{}
+	json.NewDecoder(resp.Body).Decode(&collections)
+	return collections, nil
+}

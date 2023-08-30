@@ -46,4 +46,16 @@ var _ = Describe("Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ver).To(Equal("0.4.8"))
 	})
+
+	Describe("collections", func() {
+		It("list collections", func() {
+			client, err := chroma.NewClient("http://localhost:8000")
+			Expect(err).ToNot(HaveOccurred())
+
+			collections, err := client.ListCollections()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(collections)).To(Equal(0))
+		})
+	})
+
 })
