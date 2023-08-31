@@ -88,6 +88,16 @@ var _ = Describe("Client", func() {
 				Expect(len(collections)).To(Equal(0))
 			})
 
+			It("getOrCreate", func() {
+				collection, err := testClient.GetOrCreateCollection("unit-test-getorcreate", "l2", nil)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collection.Name).To(Equal("unit-test-getorcreate"))
+
+				// recreate
+				collection, err = testClient.GetOrCreateCollection("unit-test-getorcreate", "l2", nil)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collection.Name).To(Equal("unit-test-getorcreate"))
+			})
 		})
 
 	})

@@ -102,18 +102,25 @@ type Collection struct {
 	Metadata map[string]any `json:"metadata"`
 }
 
-func (c *Client) CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
+func (c *Client) GetOrCreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
+	return c.createCollection(name, distanceFn, metadata, true)
 
+}
+
+func (c *Client) CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
+	return c.createCollection(name, distanceFn, metadata, false)
+}
+func (c *Client) createCollection(name string, distanceFn string, metadata map[string]any, getOrCreate bool) (Collection, error) {
 	if metadata == nil {
 		metadata = map[string]any{}
 	}
 	if distanceFn == "" {
 		metadata["hnsw:space"] = "l2"
 	} else {
-		metadata["hnsw:space"] = strings.ToLower(string(distanceFn))
+		metadata["hnsw:space"] = strings.ToLower(distanceFn)
 	}
 	data := map[string]any{
-		"name": name, "metadata": metadata, "get_or_create": false,
+		"name": name, "metadata": metadata, "get_or_create": getOrCreate,
 	}
 	collection := Collection{}
 
