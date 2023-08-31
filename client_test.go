@@ -56,6 +56,12 @@ var _ = Describe("Client", func() {
 				Expect(err.Error()).To(Equal("error while creating collection: ValueError('Collection unit-test already exists.')"))
 			})
 
+			It("get", func() {
+				collection, err := testClient.GetCollection("unit-test")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collection.Name).To(Equal("unit-test"))
+			})
+
 			It("list", func() {
 				// list the collections
 				collections, err := testClient.ListCollections()
@@ -81,6 +87,7 @@ var _ = Describe("Client", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(collections)).To(Equal(0))
 			})
+
 		})
 
 	})

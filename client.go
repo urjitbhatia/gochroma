@@ -166,3 +166,17 @@ func (c *Client) DeleteCollection(name string) error {
 	}
 	return nil
 }
+
+func (c *Client) GetCollection(name string) (Collection, error) {
+	resp, err := c.httpClient.Get(c.url + "/collections/" + name)
+	if err != nil {
+		return Collection{}, err
+	}
+
+	collection := Collection{}
+	err = json.NewDecoder(resp.Body).Decode(&collection)
+	if err != nil {
+		return Collection{}, err
+	}
+	return collection, nil
+}
