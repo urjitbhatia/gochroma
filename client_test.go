@@ -84,5 +84,22 @@ var _ = Describe("Client", func() {
 			Expect(collections[0].Name).To(Equal("unit-test"))
 			Expect(collections[0].Metadata).To(Equal(map[string]any{"hnsw:space": "l2"}))
 		})
+
+		It("delete and then list collections", func() {
+			client, err := chroma.NewClient("http://localhost:8000")
+			Expect(err).ToNot(HaveOccurred())
+
+			// delete when collection doesn't exist should error
+			err = client.DeleteCollection("unittest")
+			Expect(err.Error()).To(Equal("error deleting collection: ValueError('Collection unittest does not exist.')"))
+
+			// create a collection, then delete
+			_, err = client.CreateCollection("unittest", "l2", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			// this time delete shouldn't error
+			err = client.DeleteCollection("unittest")
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })

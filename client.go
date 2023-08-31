@@ -145,3 +145,24 @@ func (c *Client) CreateCollection(name string, distanceFn string, metadata map[s
 	err = json.Unmarshal(bodyBuf, &collection)
 	return collection, err
 }
+
+func (c *Client) DeleteCollection(name string) error {
+	req, err := http.NewRequest(http.MethodDelete, c.url+"/collections/"+name, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	deleteResp := map[string]any{}
+	err = json.NewDecoder(resp.Body).Decode(&deleteResp)
+	if err != nil {
+		return err
+	}
+	if errStr, ok := deleteResp["error"]; ok {
+		return fmt.Errorf("error deleting collection: %s", errStr)
+	}
+	return nil
+}
