@@ -97,7 +97,7 @@ func (c *Client) ListCollections() ([]Collection, error) {
 		return nil, err
 	}
 	for _, collection := range collections {
-		collection.cc = c
+		collection.serverBaseAddr = c.url
 	}
 	return collections, err
 }
@@ -109,6 +109,7 @@ func (c *Client) GetOrCreateCollection(name string, distanceFn string, metadata 
 func (c *Client) CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
 	return c.createCollection(name, distanceFn, metadata, false)
 }
+
 func (c *Client) createCollection(name string, distanceFn string, metadata map[string]any, getOrCreate bool) (Collection, error) {
 	if metadata == nil {
 		metadata = map[string]any{}
@@ -121,7 +122,7 @@ func (c *Client) createCollection(name string, distanceFn string, metadata map[s
 	data := map[string]any{
 		"name": name, "metadata": metadata, "get_or_create": getOrCreate,
 	}
-	collection := Collection{cc: c}
+	collection := Collection{serverBaseAddr: c.url}
 
 	reqBody, err := json.Marshal(data)
 	if err != nil {
@@ -179,7 +180,7 @@ func (c *Client) GetCollection(name string) (Collection, error) {
 		return Collection{}, err
 	}
 
-	collection := Collection{cc: c}
+	collection := Collection{serverBaseAddr: c.url}
 	err = json.NewDecoder(resp.Body).Decode(&collection)
 	if err != nil {
 		return Collection{}, err
