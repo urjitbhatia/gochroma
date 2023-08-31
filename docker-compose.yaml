@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
+    environment:
+      - ALLOW_RESET=TRUE
+    volumes:
+      - index_data:/chroma/.chroma/index
+    ports:
+      - "8001:8000"
+volumes:
+  index_data:
+    driver: local

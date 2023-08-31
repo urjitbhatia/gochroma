@@ -24,7 +24,7 @@ func NewClient(serverURL string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	u.Path = "/api/v1"
+	u = u.JoinPath("api/v1")
 	c := &Client{url: u.String(), httpClient: http.Client{}}
 	return c, err
 }
@@ -96,12 +96,6 @@ func (c *Client) ListCollections() ([]Collection, error) {
 	return collections, err
 }
 
-type Collection struct {
-	Name     string         `json:"name"`
-	ID       string         `json:"id"`
-	Metadata map[string]any `json:"metadata"`
-}
-
 func (c *Client) GetOrCreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
 	return c.createCollection(name, distanceFn, metadata, true)
 
@@ -122,7 +116,7 @@ func (c *Client) createCollection(name string, distanceFn string, metadata map[s
 	data := map[string]any{
 		"name": name, "metadata": metadata, "get_or_create": getOrCreate,
 	}
-	collection := Collection{}
+	collection := Collection{cc: c}
 
 	reqBody, err := json.Marshal(data)
 	if err != nil {
