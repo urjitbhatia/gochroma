@@ -13,7 +13,7 @@ func (e testEmbedder) GetEmbeddings(_ string, _ string) ([]float32, error) {
 	return []float32{0.0, 1.1, 2.2}, nil
 }
 
-var _ = FDescribe("Collection", func() {
+var _ = Describe("Collection", func() {
 	It("generates Embeddings", func() {
 		err := chroma.GenerateEmbeddings(chroma.Document{
 			ID:         "testDoc1",

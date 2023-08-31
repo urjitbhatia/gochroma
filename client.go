@@ -93,12 +93,17 @@ func (c *Client) ListCollections() ([]Collection, error) {
 
 	collections := []Collection{}
 	err = json.NewDecoder(resp.Body).Decode(&collections)
+	if err != nil {
+		return nil, err
+	}
+	for _, collection := range collections {
+		collection.cc = c
+	}
 	return collections, err
 }
 
 func (c *Client) GetOrCreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
 	return c.createCollection(name, distanceFn, metadata, true)
-
 }
 
 func (c *Client) CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error) {
@@ -174,7 +179,7 @@ func (c *Client) GetCollection(name string) (Collection, error) {
 		return Collection{}, err
 	}
 
-	collection := Collection{}
+	collection := Collection{cc: c}
 	err = json.NewDecoder(resp.Body).Decode(&collection)
 	if err != nil {
 		return Collection{}, err
