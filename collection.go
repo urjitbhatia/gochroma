@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type Collection struct {
@@ -221,4 +222,17 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 		return nil, err
 	}
 	return respObj.asFlattenedDocuments(), nil
+}
+
+func (c Collection) Count() (int, error) {
+	resp, err := http.DefaultClient.Get(c.serverBaseAddr + "/collections/" + c.ID + "/count")
+	if err != nil {
+		return -1, err
+	}
+	defer resp.Body.Close()
+	count, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return -1, err
+	}
+	return strconv.Atoi(string(count))
 }

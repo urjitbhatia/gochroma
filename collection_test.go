@@ -48,8 +48,13 @@ var _ = Describe("Collection", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("gets documents", func() {
+		It("counts documents in the collection", func() {
+			count, err := testCollection.Count()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(count).To(Equal(2))
+		})
 
+		It("gets documents", func() {
 			docs, err := testCollection.Get(nil, nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(docs)).To(Equal(2))
@@ -97,5 +102,6 @@ var _ = Describe("Collection", func() {
 			Expect(len(docs)).To(Equal(1))
 			Expect(docs[0]).To(Equal(testDocument1))
 		})
+
 	})
 })
