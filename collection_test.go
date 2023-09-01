@@ -9,16 +9,22 @@ import (
 type testEmbedder struct {
 }
 
-func (e testEmbedder) GetEmbeddings(_ string, _ string) ([]float32, error) {
-	return []float32{0.0, 1.1, 2.2}, nil
+func (e testEmbedder) GetEmbeddings(_ string, content string) ([]float32, error) {
+	return []float32{float32(len(content)), 1.1, 2.2}, nil
 }
 
 var _ = Describe("Collection", func() {
-	testDocument := chroma.Document{
+	testDocument1 := chroma.Document{
 		ID:         "testDoc1",
 		Embeddings: nil,
-		Metadata:   map[string]any{"source": "unittest"},
+		Metadata:   map[string]any{"source": "unittest_doc_1"},
 		Content:    "Hello, how are you?",
+	}
+	testDocument2 := chroma.Document{
+		ID:         "testDoc2",
+		Embeddings: nil,
+		Metadata:   map[string]any{"source": "unittest_doc_2"},
+		Content:    "I am well",
 	}
 
 	Describe("add, fetch, delete sequence", Ordered, func() {
@@ -35,19 +41,61 @@ var _ = Describe("Collection", func() {
 		})
 
 		It("adds documents", func() {
-			Expect(testCollection.Name).To(Equal("collections-unit-test"))
+			err := testCollection.Add([]chroma.Document{testDocument1}, testEmbedder{})
+			Expect(err).ToNot(HaveOccurred())
 
-			err := testCollection.Add([]chroma.Document{testDocument}, testEmbedder{})
+			err = testCollection.Add([]chroma.Document{testDocument2}, testEmbedder{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("gets documents", func() {
-			Expect(testCollection.Name).To(Equal("collections-unit-test"))
 
 			docs, err := testCollection.Get(nil, nil, nil)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(len(docs)).To(Equal(2))
+			Expect(docs[0]).To(Equal(testDocument1))
+		})
+
+		It("query documents by text", func() {
+			docs, err := testCollection.Query(
+				"Hello, how are yu",
+				2,
+				nil,
+				nil,
+				[]chroma.QueryEnum{chroma.WithDocuments, chroma.WithMetadatas, chroma.WithDistances},
+				testEmbedder{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(docs)).To(Equal(2))
+			// document 1 will be close since our test embedding generator depends on content length
+			// and doc1's content length is closer
+			Expect(docs[0]).To(Equal(testDocument1))
+			Expect(docs[1]).To(Equal(testDocument2))
+		})
+
+		It("restrict query by metadata", func() {
+			docs, err := testCollection.Query(
+				"",
+				2,
+				map[string]any{"source": "unittest_doc_2"},
+				nil,
+				[]chroma.QueryEnum{chroma.WithDocuments, chroma.WithMetadatas, chroma.WithDistances},
+				testEmbedder{})
+			Expect(err).ToNot(HaveOccurred())
 			Expect(len(docs)).To(Equal(1))
-			Expect(docs[0]).To(Equal(testDocument))
+			Expect(docs[0]).To(Equal(testDocument2))
+		})
+
+		It("restrict query by where document", func() {
+			docs, err := testCollection.Query(
+				"y?",
+				2,
+				nil,
+				map[string]interface{}{"$contains": "you"},
+				[]chroma.QueryEnum{chroma.WithDocuments, chroma.WithMetadatas, chroma.WithDistances},
+				testEmbedder{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(docs)).To(Equal(1))
+			Expect(docs[0]).To(Equal(testDocument1))
 		})
 	})
 })
