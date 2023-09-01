@@ -30,9 +30,9 @@ type OpenAIClient struct {
 	authHeader string
 }
 
-func NewOpenAIClient(key string, httpClient *http.Client) OpenAIClient {
+func NewOpenAIClient(key string) OpenAIClient {
 	return OpenAIClient{
-		client:     httpClient,
+		client:     http.DefaultClient,
 		authHeader: fmt.Sprintf("Bearer: %s", key),
 	}
 }

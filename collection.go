@@ -26,7 +26,7 @@ type Document struct {
 }
 
 var (
-	openai = embeddings.NewOpenAIClient(os.Getenv("OPENAI_API_KEY"), http.DefaultClient)
+	openai = embeddings.NewOpenAIClient(os.Getenv("OPENAI_API_KEY"))
 )
 
 type chromaCollectionObject struct {
