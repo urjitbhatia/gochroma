@@ -32,7 +32,7 @@ type OpenAIClient struct {
 func NewOpenAIClient(key string) OpenAIClient {
 	return OpenAIClient{
 		client:     http.DefaultClient,
-		authHeader: fmt.Sprintf("Bearer: %s", key),
+		authHeader: fmt.Sprintf("Bearer %s", key),
 	}
 }
 
