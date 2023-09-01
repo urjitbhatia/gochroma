@@ -13,15 +13,16 @@ var openAIURL = "https://api.openai.com/v1/"
 var openAIEmbeddingsURL = openAIURL + "/embeddings"
 
 type embeddingResponse struct {
-	Data struct {
-		Object    string
-		Embedding []float32
-	}
-	Model string
+	Data []struct {
+		Object    string    `json:"object,omitempty"`
+		Index     int       `json:"index,omitempty"`
+		Embedding []float32 `json:"embedding,omitempty"`
+	} `json:"data"`
+	Model string `json:"model,omitempty"`
 	Usage struct {
-		PromptTokens int
-		TotalTokens  int
-	}
+		PromptTokens int `json:"prompt_tokens,omitempty"`
+		TotalTokens  int `json:"total_tokens,omitempty"`
+	} `json:"usage"`
 }
 
 type OpenAIClient struct {
@@ -68,9 +69,14 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 	}
 
 	er := embeddingResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&er)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling openai embeddings response: %w", err)
+		return nil, fmt.Errorf("error reading openai embeddings response body: %w", err)
+	}
+
+	err = json.Unmarshal(respBody, &er)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling openai embeddings response: %w\nresponse body: %s", err, string(respBody))
 	}
 
 	log.Debug().
@@ -80,5 +86,8 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 		Int("totalTokensUsed", er.Usage.TotalTokens).
 		Msg("openai embedding token usage")
 
-	return er.Data.Embedding, nil
+	if len(er.Data) == 0 {
+		return nil, fmt.Errorf("something went wrong, got no embeddings from openai")
+	}
+	return er.Data[0].Embedding, nil
 }
