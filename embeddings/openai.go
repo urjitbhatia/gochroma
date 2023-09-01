@@ -11,7 +11,6 @@ import (
 
 var openAIURL = "https://api.openai.com/v1/"
 var openAIEmbeddingsURL = openAIURL + "/embeddings"
-var openAIAuth string
 
 type embeddingResponse struct {
 	Data struct {
@@ -52,7 +51,7 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", openAIAuth)
+	req.Header.Add("Authorization", o.authHeader)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
