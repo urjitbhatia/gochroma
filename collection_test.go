@@ -1,16 +1,24 @@
 package chroma_test
 
 import (
+	"encoding/json"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	chroma "github.com/urjitbhatia/gochroma"
+	"github.com/urjitbhatia/gochroma/embeddings"
+	"net/http"
+	"net/http/httptest"
 )
 
 type testEmbedder struct {
 }
 
-func (e testEmbedder) GetEmbeddings(_ string, content string) ([]float32, error) {
+func (e testEmbedder) GetEmbeddings(content string) ([]float32, error) {
 	return []float32{float32(len(content)), 1.1, 2.2}, nil
+}
+
+func (e testEmbedder) GetEmbeddingsBatch(content []string) ([][]float32, error) {
+	return [][]float32{{float32(len(content)), 1.1, 2.2}}, nil
 }
 
 var _ = Describe("Collection", func() {
@@ -26,6 +34,66 @@ var _ = Describe("Collection", func() {
 		Metadata:   map[string]any{"source": "unittest_doc_2"},
 		Content:    "I am well",
 	}
+
+	Describe("embeddings", func() {
+		It("getEmbeddings", func() {
+			// Start a local HTTP server
+			embeddingsResponseObject := json.RawMessage(`
+			{
+			  "object": "list",
+			  "data": [
+				{
+				  "object": "embedding",
+				  "embedding": [
+					0.0023064255,
+					-0.009327292,
+					-0.0028842222
+				  ],
+				  "index": 0
+				},
+				{
+				  "object": "embedding",
+				  "embedding": [
+					1.0023064255,
+					2.009327292,
+					3.0028842222
+				  ],
+				  "index": 0
+				}
+			  ],
+			  "model": "text-embedding-ada-002",
+			  "usage": {
+				"prompt_tokens": 8,
+				"total_tokens": 8
+			  }
+			}
+			`)
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				defer GinkgoRecover()
+				// Test request parameters
+				Expect(req.URL.String()).To(Equal("/embeddings"))
+				// Send response to be tested
+				rw.Write(embeddingsResponseObject)
+			}))
+			// Close the server when test finishes
+			defer server.Close()
+
+			openai := embeddings.NewOpenAIClientWithHTTP(server.URL, "", server.Client())
+			e, err := openai.GetEmbeddings("foo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(e)).To(Equal(3))
+
+			// test batch
+			ee, err := openai.GetEmbeddingsBatch([]string{"foo", "bar"})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(ee)).To(Equal(2))
+			Expect(len(ee[0])).To(Equal(3))
+			Expect(len(ee[1])).To(Equal(3))
+			Expect(ee[1][0]).To(BeNumerically(">=", 1.0))
+			Expect(ee[1][1]).To(BeNumerically(">=", 2.0))
+			Expect(ee[1][2]).To(BeNumerically(">=", 3.0))
+		})
+	})
 
 	Describe("add, fetch, delete sequence", Ordered, func() {
 

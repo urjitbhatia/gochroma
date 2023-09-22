@@ -88,7 +88,7 @@ func (c Collection) Add(docs []Document, embedder embeddings.Embedder) error {
 	for i, doc := range docs {
 		// create embeddings if they don't exist
 		if len(doc.Embeddings) == 0 {
-			if e, err := embedder.GetEmbeddings(doc.ID, doc.Content); err != nil {
+			if e, err := embedder.GetEmbeddings(doc.Content); err != nil {
 				return err
 			} else {
 				doc.Embeddings = e
@@ -180,7 +180,7 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 	if len(include) == 0 {
 		include = []QueryEnum{WithDocuments, WithEmbeddings, WithDistances, WithMetadatas}
 	}
-	queryEmbeddings, err := embedder.GetEmbeddings("", query)
+	queryEmbeddings, err := embedder.GetEmbeddings(query)
 	if err != nil {
 		return nil, fmt.Errorf("error generating embeddings for query. Error: %w", err)
 	}

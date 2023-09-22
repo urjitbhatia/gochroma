@@ -10,7 +10,7 @@ import (
 )
 
 var openAIURL = "https://api.openai.com/v1/"
-var openAIEmbeddingsURL = openAIURL + "/embeddings"
+var openAIEmbeddingsPath = "/embeddings"
 
 type embeddingResponse struct {
 	Data []struct {
@@ -26,19 +26,36 @@ type embeddingResponse struct {
 }
 
 type OpenAIClient struct {
-	client     *http.Client
-	authHeader string
+	client         *http.Client
+	authHeader     string
+	openAIEndpoint string
 }
 
 func NewOpenAIClient(key string) OpenAIClient {
+	return NewOpenAIClientWithHTTP(openAIURL, key, http.DefaultClient)
+}
+
+func NewOpenAIClientWithHTTP(openAIEndpoint, key string, client *http.Client) OpenAIClient {
+	if openAIEndpoint == "" {
+		openAIEndpoint = openAIURL
+	}
 	return OpenAIClient{
-		client:     http.DefaultClient,
-		authHeader: fmt.Sprintf("Bearer %s", key),
+		client:         client,
+		authHeader:     fmt.Sprintf("Bearer %s", key),
+		openAIEndpoint: openAIEndpoint,
 	}
 }
 
-func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, error) {
-	body, err := json.Marshal(map[string]string{
+func (o *OpenAIClient) GetEmbeddings(content string) ([]float32, error) {
+	embeddings, err := o.GetEmbeddingsBatch([]string{content})
+	if err != nil {
+		return nil, err
+	}
+	return embeddings[0], nil
+}
+
+func (o *OpenAIClient) GetEmbeddingsBatch(content []string) ([][]float32, error) {
+	body, err := json.Marshal(map[string]any{
 		"model": "text-embedding-ada-002",
 		"input": content,
 	})
@@ -46,7 +63,7 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, openAIEmbeddingsURL, bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPost, o.openAIEndpoint+openAIEmbeddingsPath, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +71,7 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", o.authHeader)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := o.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +97,6 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 	}
 
 	log.Debug().
-		Str("documentID", id).
 		Str("embeddingModelUsed", er.Model).
 		Int("promptTokensUsed", er.Usage.PromptTokens).
 		Int("totalTokensUsed", er.Usage.TotalTokens).
@@ -89,5 +105,9 @@ func (o *OpenAIClient) GetEmbeddings(id string, content string) ([]float32, erro
 	if len(er.Data) == 0 {
 		return nil, fmt.Errorf("something went wrong, got no embeddings from openai")
 	}
-	return er.Data[0].Embedding, nil
+	var embeddings [][]float32
+	for _, data := range er.Data {
+		embeddings = append(embeddings, data.Embedding)
+	}
+	return embeddings, nil
 }
