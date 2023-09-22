@@ -18,7 +18,6 @@ var _ = Describe("Client", func() {
 		alive, err := testClient.Heartbeat()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(alive).To(BeNumerically(">", 0))
-
 	})
 
 	It("resets the db", func() {

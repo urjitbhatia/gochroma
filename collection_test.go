@@ -14,11 +14,19 @@ type testEmbedder struct {
 }
 
 func (e testEmbedder) GetEmbeddings(content string) ([]float32, error) {
+	// implements a really simple embedding scheme which lets us test consistently
+	// since the output depends on the input in some way
 	return []float32{float32(len(content)), 1.1, 2.2}, nil
 }
 
 func (e testEmbedder) GetEmbeddingsBatch(content []string) ([][]float32, error) {
-	return [][]float32{{float32(len(content)), 1.1, 2.2}}, nil
+	// implements a really simple embedding scheme which lets us test consistently
+	// since the output depends on the input in some way
+	var embedVectors [][]float32
+	for _, text := range content {
+		embedVectors = append(embedVectors, []float32{float32(len(text)), 1.1, 2.2})
+	}
+	return embedVectors, nil
 }
 
 var _ = Describe("Collection", func() {
@@ -171,5 +179,32 @@ var _ = Describe("Collection", func() {
 			Expect(docs[0]).To(Equal(testDocument1))
 		})
 
+	})
+
+	It("Slice batcher", func() {
+		flatten := func(nested [][]int) []int {
+			var res []int
+			for _, item := range nested {
+				res = append(res, item...)
+			}
+			return res
+		}
+
+		items := []int{1, 2, 3, 4, 5, 6, 7}
+		batches := chroma.SliceBatch(items, 1)
+		Expect(len(batches)).To(Equal(7))
+		Expect(flatten(batches)).To(Equal(items))
+
+		batches = chroma.SliceBatch(items, 3)
+		Expect(len(batches)).To(Equal(3))
+		Expect(flatten(batches)).To(Equal(items))
+
+		batches = chroma.SliceBatch(items, 4)
+		Expect(len(batches)).To(Equal(2))
+		Expect(flatten(batches)).To(Equal(items))
+
+		batches = chroma.SliceBatch(items, 10)
+		Expect(len(batches)).To(Equal(1))
+		Expect(flatten(batches)).To(Equal(items))
 	})
 })

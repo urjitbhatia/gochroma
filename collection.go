@@ -7,7 +7,6 @@ import (
 	"github.com/urjitbhatia/gochroma/embeddings"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 )
 
@@ -26,16 +25,13 @@ type Document struct {
 	Content    string
 }
 
-var (
-	openai = embeddings.NewOpenAIClient(os.Getenv("OPENAI_API_KEY"))
-)
-
 type chromaCollectionObject struct {
 	Embeddings [][]float32      `json:"embeddings"`
 	Metadatas  []map[string]any `json:"metadatas"`
 	Documents  []string         `json:"documents"`
 	IDs        []string         `json:"ids"`
 }
+
 type chromaQueryResultObject struct {
 	Embeddings [][][]float32      `json:"embeddings"`
 	Metadatas  [][]map[string]any `json:"metadatas"`
@@ -44,7 +40,7 @@ type chromaQueryResultObject struct {
 }
 
 func (o chromaQueryResultObject) asFlattenedDocuments() []Document {
-	docs := []Document{}
+	var docs []Document
 	for i := 0; i < len(o.IDs); i++ {
 		for j := 0; j < len(o.IDs[i]); j++ {
 			d := Document{
@@ -80,20 +76,43 @@ func (c chromaCollectionObject) asDocuments() []Document {
 
 func (c Collection) Add(docs []Document, embedder embeddings.Embedder) error {
 	addReq := chromaCollectionObject{
-		Embeddings: make([][]float32, len(docs)),
-		Metadatas:  make([]map[string]any, len(docs)),
-		Documents:  make([]string, len(docs)),
-		IDs:        make([]string, len(docs)),
+		Embeddings: [][]float32{},
+		Metadatas:  []map[string]any{},
+		Documents:  []string{},
+		IDs:        []string{},
 	}
-	for i, doc := range docs {
-		// create embeddings if they don't exist
+
+	var docsToFetchEmbeddings []Document
+	var docsWithEmbeddings []Document
+	for _, doc := range docs {
 		if len(doc.Embeddings) == 0 {
-			if e, err := embedder.GetEmbeddings(doc.Content); err != nil {
-				return err
-			} else {
-				doc.Embeddings = e
-			}
+			docsToFetchEmbeddings = append(docsToFetchEmbeddings, doc)
+		} else {
+			docsWithEmbeddings = append(docsWithEmbeddings, doc)
 		}
+	}
+
+	// get embeddings for docs that are missing embeddings using batch calls for efficiency
+	for _, batch := range SliceBatch(docsToFetchEmbeddings, 10) {
+		contents := make([]string, len(batch))
+		for i, doc := range batch {
+			contents[i] = doc.Content
+		}
+		addReq.Documents = append(addReq.Documents, contents...)
+
+		embedVectors, err := embedder.GetEmbeddingsBatch(contents)
+		if err != nil {
+			return err
+		}
+		addReq.Embeddings = append(addReq.Embeddings, embedVectors...)
+
+		for _, doc := range batch {
+			addReq.Metadatas = append(addReq.Metadatas, doc.Metadata)
+			addReq.IDs = append(addReq.IDs, doc.ID)
+		}
+	}
+
+	for i, doc := range docsWithEmbeddings {
 		addReq.Embeddings[i] = doc.Embeddings
 		addReq.Metadatas[i] = doc.Metadata
 		addReq.Documents[i] = doc.Content
@@ -235,4 +254,12 @@ func (c Collection) Count() (int, error) {
 		return -1, err
 	}
 	return strconv.Atoi(string(count))
+}
+
+func SliceBatch[T any](items []T, chunkSize int) [][]T {
+	batches := make([][]T, 0, (len(items)+chunkSize-1)/chunkSize)
+	for chunkSize < len(items) {
+		items, batches = items[chunkSize:], append(batches, items[0:chunkSize:chunkSize])
+	}
+	return append(batches, items)
 }

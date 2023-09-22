@@ -97,6 +97,7 @@ func (o *OpenAIClient) GetEmbeddingsBatch(content []string) ([][]float32, error)
 	}
 
 	log.Debug().
+		Str("endpoint", o.openAIEndpoint).
 		Str("embeddingModelUsed", er.Model).
 		Int("promptTokensUsed", er.Usage.PromptTokens).
 		Int("totalTokensUsed", er.Usage.TotalTokens).
