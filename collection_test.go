@@ -149,8 +149,12 @@ var _ = Describe("Collection", func() {
 			Expect(len(docs)).To(Equal(2))
 			// document 1 will be close since our test embedding generator depends on content length
 			// and doc1's content length is closer
-			Expect(docs[0]).To(Equal(testDocument1))
-			Expect(docs[1]).To(Equal(testDocument2))
+			td := testDocument1
+			td.Distance = 4
+			Expect(docs[0]).To(Equal(td))
+			td = testDocument2
+			td.Distance = 64
+			Expect(docs[1]).To(Equal(td))
 		})
 
 		It("restrict query by metadata", func() {
@@ -163,7 +167,9 @@ var _ = Describe("Collection", func() {
 				testEmbedder{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(docs)).To(Equal(1))
-			Expect(docs[0]).To(Equal(testDocument2))
+			td := testDocument2
+			td.Distance = 81
+			Expect(docs[0]).To(Equal(td))
 		})
 
 		It("restrict query by where document", func() {
@@ -176,7 +182,9 @@ var _ = Describe("Collection", func() {
 				testEmbedder{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(docs)).To(Equal(1))
-			Expect(docs[0]).To(Equal(testDocument1))
+			td := testDocument1
+			td.Distance = 289
+			Expect(docs[0]).To(Equal(td))
 		})
 
 	})

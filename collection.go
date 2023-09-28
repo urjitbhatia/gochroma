@@ -23,6 +23,7 @@ type Document struct {
 	Embeddings []float32
 	Metadata   map[string]any
 	Content    string
+	Distance   float32 // set when documents are returned from a similarity search - distance to query
 }
 
 type chromaCollectionObject struct {
@@ -34,6 +35,7 @@ type chromaCollectionObject struct {
 
 type chromaQueryResultObject struct {
 	Embeddings [][][]float32      `json:"embeddings"`
+	Distances  [][]float32        `json:"distances"`
 	Metadatas  [][]map[string]any `json:"metadatas"`
 	Documents  [][]string         `json:"documents"`
 	IDs        [][]string         `json:"ids"`
@@ -44,8 +46,9 @@ func (o chromaQueryResultObject) asFlattenedDocuments() []Document {
 	for i := 0; i < len(o.IDs); i++ {
 		for j := 0; j < len(o.IDs[i]); j++ {
 			d := Document{
-				ID:      o.IDs[i][j],
-				Content: o.Documents[i][j],
+				ID:       o.IDs[i][j],
+				Content:  o.Documents[i][j],
+				Distance: o.Distances[i][j],
 			}
 			if len(o.Embeddings) > 0 && len(o.Embeddings[i]) > 0 {
 				d.Embeddings = o.Embeddings[i][j]
