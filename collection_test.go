@@ -10,8 +10,7 @@ import (
 	"net/http/httptest"
 )
 
-type testEmbedder struct {
-}
+type testEmbedder struct{}
 
 func (e testEmbedder) GetEmbeddings(content string) ([]float32, error) {
 	// implements a really simple embedding scheme which lets us test consistently

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var testClient *chroma.Client
+var testClient chroma.Chroma
 
 func TestGochromadb(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -18,5 +18,6 @@ func TestGochromadb(t *testing.T) {
 		Expect(err).ToNot(HaveOccurred())
 		testClient = c
 	})
+
 	RunSpecs(t, "Gochromadb Suite")
 }

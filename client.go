@@ -15,11 +15,22 @@ type Client struct {
 	httpClient http.Client
 }
 
-type ChromaClient interface {
-	Heartbeat() (int, error)
+type Server interface {
+	BaseUrl() string
 }
 
-func NewClient(serverURL string) (*Client, error) {
+type Chroma interface {
+	Heartbeat() (int, error)
+	Reset() (bool, error)
+	GetVersion() (string, error)
+	ListCollections() ([]Collection, error)
+	GetOrCreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error)
+	CreateCollection(name string, distanceFn string, metadata map[string]any) (Collection, error)
+	DeleteCollection(name string) error
+	GetCollection(name string) (Collection, error)
+}
+
+func NewClient(serverURL string) (Chroma, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
@@ -27,6 +38,10 @@ func NewClient(serverURL string) (*Client, error) {
 	u = u.JoinPath("api/v1")
 	c := &Client{url: u.String(), httpClient: http.Client{}}
 	return c, err
+}
+
+func (c *Client) BaseUrl() string {
+	return c.url
 }
 
 func (c *Client) Heartbeat() (int, error) {
@@ -91,13 +106,13 @@ func (c *Client) ListCollections() ([]Collection, error) {
 		return nil, err
 	}
 
-	collections := []Collection{}
+	var collections []Collection
 	err = json.NewDecoder(resp.Body).Decode(&collections)
 	if err != nil {
 		return nil, err
 	}
 	for _, collection := range collections {
-		collection.serverBaseAddr = c.url
+		collection.server = c
 	}
 	return collections, err
 }
@@ -122,7 +137,7 @@ func (c *Client) createCollection(name string, distanceFn string, metadata map[s
 	data := map[string]any{
 		"name": name, "metadata": metadata, "get_or_create": getOrCreate,
 	}
-	collection := Collection{serverBaseAddr: c.url}
+	collection := Collection{server: c}
 
 	reqBody, err := json.Marshal(data)
 	if err != nil {
@@ -180,10 +195,12 @@ func (c *Client) GetCollection(name string) (Collection, error) {
 		return Collection{}, err
 	}
 
-	collection := Collection{serverBaseAddr: c.url}
+	collection := Collection{server: c}
 	err = json.NewDecoder(resp.Body).Decode(&collection)
 	if err != nil {
 		return Collection{}, err
 	}
+
+	collection.DistanceFn, _ = collection.Metadata["hnsw:space"].(string)
 	return collection, nil
 }

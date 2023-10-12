@@ -59,6 +59,7 @@ var _ = Describe("Client", func() {
 				collection, err := testClient.GetCollection("unit-test")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collection.Name).To(Equal("unit-test"))
+				Expect(collection.DistanceFn).To(Equal("l2"))
 			})
 
 			It("list", func() {

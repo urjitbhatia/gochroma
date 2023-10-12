@@ -11,11 +11,18 @@ import (
 )
 
 type Collection struct {
-	Name     string         `json:"name"`
-	ID       string         `json:"id"`
-	Metadata map[string]any `json:"metadata"`
+	Name       string         `json:"name"`
+	ID         string         `json:"id"`
+	Metadata   map[string]any `json:"metadata"`
+	DistanceFn string         `json:"distanceFn"`
 
-	serverBaseAddr string
+	server Server
+}
+
+// CollectionWithSrv creates a collection with the given chroma server as the backend
+// mainly used for unit testing without having to run a full chromadb server
+func CollectionWithSrv(s Server) Collection {
+	return Collection{server: s}
 }
 
 type Document struct {
@@ -128,7 +135,7 @@ func (c Collection) Add(docs []Document, embedder embeddings.Embedder) error {
 	}
 
 	resp, err := http.DefaultClient.Post(
-		fmt.Sprintf("%s/collections/%s/add", c.serverBaseAddr, c.ID),
+		fmt.Sprintf("%s/collections/%s/add", c.server.BaseUrl(), c.ID),
 		"application/json",
 		bytes.NewBuffer(body))
 
@@ -158,7 +165,7 @@ func (c Collection) Get(ids []string, where map[string]any, documents map[string
 	}
 	req, err := http.NewRequest(
 		http.MethodPost,
-		c.serverBaseAddr+"/collections/"+c.ID+"/get",
+		c.server.BaseUrl()+"/collections/"+c.ID+"/get",
 		bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -221,7 +228,7 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 	}
 	req, err := http.NewRequest(
 		http.MethodPost,
-		c.serverBaseAddr+"/collections/"+c.ID+"/query",
+		c.server.BaseUrl()+"/collections/"+c.ID+"/query",
 		bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -247,7 +254,7 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 }
 
 func (c Collection) Count() (int, error) {
-	resp, err := http.DefaultClient.Get(c.serverBaseAddr + "/collections/" + c.ID + "/count")
+	resp, err := http.DefaultClient.Get(c.server.BaseUrl() + "/collections/" + c.ID + "/count")
 	if err != nil {
 		return -1, err
 	}
