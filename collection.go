@@ -2,6 +2,7 @@ package chroma
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/urjitbhatia/gochroma/embeddings"
@@ -110,7 +111,7 @@ func (c Collection) Add(docs []Document, embedder embeddings.Embedder) error {
 		}
 		addReq.Documents = append(addReq.Documents, contents...)
 
-		embedVectors, err := embedder.GetEmbeddingsBatch(contents)
+		embedVectors, err := embedder.EmbedDocuments(context.Background(), contents)
 		if err != nil {
 			return err
 		}
@@ -209,7 +210,7 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 	if len(include) == 0 {
 		include = []QueryEnum{WithDocuments, WithEmbeddings, WithDistances, WithMetadatas}
 	}
-	queryEmbeddings, err := embedder.GetEmbeddings(query)
+	queryEmbeddings, err := embedder.EmbedQuery(context.Background(), query)
 	if err != nil {
 		return nil, fmt.Errorf("error generating embeddings for query. Error: %w", err)
 	}

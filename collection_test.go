@@ -1,6 +1,7 @@
 package chroma_test
 
 import (
+	"context"
 	"encoding/json"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,13 +13,13 @@ import (
 
 type testEmbedder struct{}
 
-func (e testEmbedder) GetEmbeddings(content string) ([]float32, error) {
+func (e testEmbedder) EmbedQuery(_ context.Context, content string) ([]float32, error) {
 	// implements a really simple embedding scheme which lets us test consistently
 	// since the output depends on the input in some way
 	return []float32{float32(len(content)), 1.1, 2.2}, nil
 }
 
-func (e testEmbedder) GetEmbeddingsBatch(content []string) ([][]float32, error) {
+func (e testEmbedder) EmbedDocuments(_ context.Context, content []string) ([][]float32, error) {
 	// implements a really simple embedding scheme which lets us test consistently
 	// since the output depends on the input in some way
 	var embedVectors [][]float32
@@ -86,12 +87,12 @@ var _ = Describe("Collection", func() {
 			defer server.Close()
 
 			openai := embeddings.NewOpenAIClientWithHTTP(server.URL, "", server.Client())
-			e, err := openai.GetEmbeddings("foo")
+			e, err := openai.EmbedQuery(context.Background(), "foo")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(e)).To(Equal(3))
 
 			// test batch
-			ee, err := openai.GetEmbeddingsBatch([]string{"foo", "bar"})
+			ee, err := openai.EmbedDocuments(context.Background(), []string{"foo", "bar"})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(ee)).To(Equal(2))
 			Expect(len(ee[0])).To(Equal(3))

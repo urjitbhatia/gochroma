@@ -2,6 +2,7 @@ package embeddings
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/rs/zerolog/log"
@@ -46,15 +47,15 @@ func NewOpenAIClientWithHTTP(openAIEndpoint, key string, client *http.Client) Op
 	}
 }
 
-func (o *OpenAIClient) GetEmbeddings(content string) ([]float32, error) {
-	embeddings, err := o.GetEmbeddingsBatch([]string{content})
+func (o *OpenAIClient) EmbedQuery(ctx context.Context, content string) ([]float32, error) {
+	embeddings, err := o.EmbedDocuments(ctx, []string{content})
 	if err != nil {
 		return nil, err
 	}
 	return embeddings[0], nil
 }
 
-func (o *OpenAIClient) GetEmbeddingsBatch(content []string) ([][]float32, error) {
+func (o *OpenAIClient) EmbedDocuments(_ context.Context, content []string) ([][]float32, error) {
 	body, err := json.Marshal(map[string]any{
 		"model": "text-embedding-ada-002",
 		"input": content,
