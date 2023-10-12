@@ -31,7 +31,7 @@ jobs:
       # Label used to access the service container
       chroma:
         # Docker Hub image
-        image: ghcr.io/chroma-core/chroma:latest
+        image: ghcr.io/chroma-core/chroma:0.4.14
         env:
           ALLOW_RESET: TRUE
         ports:

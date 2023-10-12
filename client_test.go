@@ -29,7 +29,7 @@ var _ = Describe("Client", func() {
 	It("gets the version of the db", func() {
 		ver, err := testClient.GetVersion()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal("0.4.8"))
+		Expect(ver).To(Equal("0.4.14"))
 	})
 
 	Describe("collections", func() {
