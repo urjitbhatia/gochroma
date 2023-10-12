@@ -14,7 +14,7 @@ func TestGochromadb(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	BeforeSuite(func() {
-		c, err := chroma.NewClient("http://localhost:8001")
+		c, err := chroma.NewClient("http://localhost:8000")
 		Expect(err).ToNot(HaveOccurred())
 		testClient = c
 	})

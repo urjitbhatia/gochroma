@@ -7,7 +7,7 @@ services:
     volumes:
       - index_data:/chroma/.chroma/index
     ports:
-      - "8001:8000"
+      - "8000:8000"
 volumes:
   index_data:
     driver: local
