@@ -43,7 +43,7 @@ type chromaCollectionObject struct {
 
 type chromaQueryResultObject struct {
 	Embeddings [][][]float32      `json:"embeddings"`
-	Distances  [][]float32        `json:"distances"`
+	Distances  [][]float64        `json:"distances"`
 	Metadatas  [][]map[string]any `json:"metadatas"`
 	Documents  [][]string         `json:"documents"`
 	IDs        [][]string         `json:"ids"`
@@ -56,7 +56,7 @@ func (o chromaQueryResultObject) asFlattenedDocuments() []Document {
 			d := Document{
 				ID:       o.IDs[i][j],
 				Content:  o.Documents[i][j],
-				Distance: o.Distances[i][j],
+				Distance: float32(o.Distances[i][j]),
 			}
 			if len(o.Embeddings) > 0 && len(o.Embeddings[i]) > 0 {
 				d.Embeddings = o.Embeddings[i][j]
@@ -249,7 +249,7 @@ func (c Collection) Query(query string, numResults int32, where map[string]inter
 	respObj := chromaQueryResultObject{}
 	err = json.Unmarshal(bodyBuf, &respObj)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed unpacking chroma query result: %w", err)
 	}
 	return respObj.asFlattenedDocuments(), nil
 }
